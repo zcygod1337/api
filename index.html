@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 客户端</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h2 class="text-2xl font-bold text-center mb-6">API 客户端</h2>
+        <div class="mb-4">
+            <label for="inputMessage" class="block text-gray-700 font-bold mb-2">输入消息:</label>
+            <input type="text" id="inputMessage" class="w-full border border-gray-300 p-2 rounded"
+                placeholder="请输入消息">
+        </div>
+        <button id="sendButton"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">发送</button>
+        <div class="mt-6">
+            <label for="outputMessage" class="block text-gray-700 font-bold mb-2">API 回复:</label>
+            <div id="outputMessage"
+                class="border border-gray-300 p-2 rounded h-32 overflow-y-auto bg-gray-50"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = 'sk-nojugoolxdlsjaectgckdbjnkuogpimwfscrhwgykyxjcgvx';
+        const baseUrl = 'https://api.siliconflow.cn/v1';
+
+        const inputMessage = document.getElementById('inputMessage');
+        const sendButton = document.getElementById('sendButton');
+        const outputMessage = document.getElementById('outputMessage');
+
+        sendButton.addEventListener('click', async () => {
+            const query = inputMessage.value;
+            if (query) {
+                try {
+                    const response = await fetch(`${baseUrl}/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-ai/DeepSeek-V3',
+                            messages: [
+                                { "role": "system", "content": "下面的内容请简介明了的回复" },
+                                { "role": "user", "content": query }
+                            ],
+                            temperature: 0.6,
+                            top_p: 0.95
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    outputMessage.textContent = data.choices[0].message.content;
+                } catch (error) {
+                    outputMessage.textContent = `发生错误: ${error.message}`;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>    
