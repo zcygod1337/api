@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API调用工具</title>
+    
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 平滑滚动全局设置 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* 进度条样式 */
+        #progressBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899);
+            background-size: 200% auto;
+            width: 0%;
+            transition: width 0.3s ease;
+            z-index: 9999;
+            animation: gradientMove 2s linear infinite;
+        }
+        
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        /* 全局样式 + 背景图设置 */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #000000;
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 20px;
+            /* 背景图设置：模糊 + 固定 + 居中 */
+            background-image: url('https://cdn.luogu.com.cn/upload/image_hosting/rwpuyyz6.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            /* 背景图叠加层：增强文字可读性 */
+            position: relative;
+        }
+        
+        /* 背景图模糊叠加层（不影响内容） */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+        
+        /* 头部样式 + glowing效果 */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            /* 文字glowing效果 */
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1F2937;
+            /* 增强标题glowing */
+            transition: all 0.3s ease;
+        }
+        
+        h1:hover {
+            text-shadow: 0 0 12px rgba(59, 130, 246, 0.6), 0 0 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        header p {
+            color: #6B7280;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .text-primary {
+            color: #3B82F6;
+        }
+        
+        .font-mono {
+            font-family: monospace;
+        }
+        
+        /* 主内容区样式：磨砂玻璃 + glowing边框 */
+        main {
+            /* 磨砂玻璃效果 */
+            background-color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            /* glowing边框效果 */
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2), 
+                        inset 0 0 10px rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 24px;
+            margin-bottom: 32px;
+            /* 边框glowing动画（可选） */
+            transition: all 0.5s ease;
+        }
+        
+        main:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 
+                        inset 0 0 15px rgba(59, 130, 246, 0.15);
+        }
+        
+        @media (min-width: 768px) {
+            main {
+                padding: 32px;
+            }
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 32px;
+        }
+        
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4B5563;
+            margin-bottom: 8px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            /* 输入框磨砂效果 */
+            border: 1px solid rgba(209, 213, 219, 0.7);
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            resize: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* 轻微glowing */
+            box-shadow: inset 0 0 5px rgba(59, 130, 246, 0.05);
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.2), 
+                        inset 0 0 5px rgba(59, 130, 246, 0.1);
+        }
+        
+        .text-xs {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        
+        /* 按钮样式 + glowing效果 */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        
+        button {
+            background-color: #3B82F6;
+            color: white;
+            font-weight: 500;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px;
+            /* 按钮glowing效果 */
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4), 
+                        0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        button:hover {
+            background-color: #000000;
+            /*  hover时增强glowing */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4), 
+                        0 0 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        button i {
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        button:hover i {
+            transform: translateX(3px);
+        }
+        
+        /* 加载状态 */
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 32px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid transparent;
+            border-bottom-color: #000000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            /* 加载动画glowing */
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading span {
+            margin-left: 12px;
+            color: #4B5563;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 错误信息 */
+        .error {
+            display: none;
+            background-color: rgba(254, 242, 242, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid #FEE2E2;
+            color: #DC2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            /* 错误提示glowing */
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.2);
+        }
+        
+        /* 响应结果：磨砂 + glowing */
+        .response-container {
+            display: none;
+        }
+        
+        .answer-section {
+            background-color: rgba(239, 246, 255, 0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-left: 4px solid #3B82F6;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.7;
+            /* 结果区glowing */
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+        }
+        
+        .answer-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1E40AF;
+            font-size: 18px;
+            /* 标题glowing */
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+        }
+        
+        .answer-content {
+            font-size: 16px;
+            color: #1F2937;
+        }
+        
+        /* 页脚样式 */
+        footer {
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+            padding: 10px 0;
+            /* 页脚文字轻微glowing */
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+        
+        /* 图标样式 */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            stroke-width: 0;
+            stroke: currentColor;
+            fill: currentColor;
+        }
+    </style>
+    
+    <!-- 简单的图标定义（修复arrow-right图标引用） -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="arrow-right" viewBox="0 0 24 24">
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/>
+        </symbol>
+        <symbol id="paper-plane" viewBox="0 0 24 24">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zm-11 5.17l-5-2.86V9.09l5 2.86v9.22zm2 0V12l5-2.86v9.22l-5 2.86z"/>
+        </symbol>
+        <symbol id="reply" viewBox="0 0 24 24">
+            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+        </symbol>
+    </svg>
+</head>
+<body>
+    <!-- 平滑进度条 -->
+    <div id="progressBar"></div>
+    
+    <div class="container">
+        <!-- 页面标题 -->
+        <header>
+            <h1>答案之书</h1>
+        </header>
+        
+        <!-- 主内容区 -->
+        <main>
+            <!-- 输入表单 -->
+            <div class="form-group">
+                <label for="question">请输入问题:</label>
+                <textarea 
+                    id="question" 
+                    class="question-input"
+                    placeholder="在这里输入你想要提交的问题..."
+                ></textarea>
+                <p class="text-xs"></p>
+            </div>
+            
+            <!-- 提交按钮 -->
+            <div class="btn-container">
+                <button id="submitBtn">
+                    <span>寻找答案</span>
+                    <svg class="icon" width="1em" height="1em">
+                        <use xlink:href="#arrow-right"></use>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>正在发送请求...</span>
+            </div>
+            
+            <!-- 错误信息 -->
+            <div id="error" class="error"></div>
+            
+            <!-- 响应结果 -->
+            <div id="responseContainer" class="response-container">
+                <!-- 仅保留提取的答案部分 -->
+                <div class="answer-section">
+                    <h3 class="answer-title">答案</h3>
+                    <div class="answer-content" id="answerContent"></div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer>
+            <p>API来源https://uapis.cn</p>
+        </footer>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const questionInput = document.getElementById('question');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const responseContainer = document.getElementById('responseContainer');
+        const answerContent = document.getElementById('answerContent');
+        const progressBar = document.getElementById('progressBar');
+        
+        // API配置
+        const API_URL = 'https://uapis.cn/api/v1/answerbook/ask';
+        
+        // 平滑进度条逻辑（监听页面滚动）
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            progressBar.style.width = scrolled + '%';
+        });
+        
+        // 提交请求
+        submitBtn.addEventListener('click', async () => {
+            // 获取用户输入
+            const question = questionInput.value.trim();
+            
+            // 验证输入
+            if (!question) {
+                showError('请输入问题内容');
+                return;
+            }
+            
+            // 准备发送请求
+            resetUI();
+            showLoading();
+            
+            try {
+                // 发送POST请求
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+                
+                // 解析响应
+                const result = await response.json();
+                
+                // 显示结果
+                hideLoading();
+                showResponse(result);
+                
+            } catch (err) {
+                // 处理错误
+                hideLoading();
+                showError(`请求失败: ${err.message}`);
+                console.error('API请求错误:', err);
+            }
+        });
+        
+        // 按Enter键提交 (Shift+Enter换行)
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitBtn.click();
+            }
+        });
+        
+        // UI辅助函数
+        function showLoading() {
+            loading.style.display = 'flex';
+            // 加载时重置进度条
+            progressBar.style.width = '0%';
+        }
+        
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+        
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+        
+        function showResponse(data) {
+            // 显示提取的answer字段
+            if (data && data.answer !== undefined) {
+                answerContent.textContent = data.answer;
+            } else if (data && data.code !== 200) {
+                // 如果API返回错误状态码
+                answerContent.innerHTML = `<span style="color: #DC2626;">API返回错误 (代码: ${data.code})</span>`;
+            } else {
+                answerContent.innerHTML = '<span style="color: #DC2626;">无法从响应中提取答案</span>';
+            }
+            
+            // 显示响应容器
+            responseContainer.style.display = 'block';
+            
+            // 平滑滚动到响应结果
+            responseContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function resetUI() {
+            error.style.display = 'none';
+            responseContainer.style.display = 'none';
+            answerContent.textContent = '';
+        }
+    </script>
+</body>
+</html>
